@@ -22,7 +22,6 @@ def load_config(path):
 
 def normalize_data(inp):
     """
-    TODO
     Normalizes image pixels here to have 0 mean and unit variance.
 
     args:
@@ -32,12 +31,17 @@ def normalize_data(inp):
         normalized inp: N X d 2D array
 
     """
-    raise NotImplementedError("normalize_data not implemented")
+    mean = np.mean(inp, axis=0)
+    std = np.std(inp, axis=0)
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        normalized_inp = np.where(std == 0, 0, (inp - mean) / std)
+    return normalized_inp
 
 
 def one_hot_encoding(labels, num_classes=10):
     """
-    TODO
     Encodes labels using one hot encoding.
 
     args:
@@ -47,7 +51,9 @@ def one_hot_encoding(labels, num_classes=10):
     returns:
         oneHot : N X num_classes 2D array
     """
-    raise NotImplementedError("one_hot_encoding not implemented")
+    oneHot = np.zeros((labels.size, num_classes))
+    oneHot[np.arange(labels.size), labels] = 1
+    return oneHot
 
 
 def generate_minibatches(dataset, batch_size=64):
@@ -145,10 +151,22 @@ def plots(trainEpochLoss, trainEpochAccuracy, valEpochLoss, valEpochAccuracy, ea
 def createTrainValSplit(x_train,y_train):
 
     """
-    TODO
     Creates the train-validation split (80-20 split for train-val). Please shuffle the data before creating the train-val split.
     """
-    raise NotImplementedError("createTrainValSplit not implemented")
+    assert len(x_train) == len(y_train)
+    indices = np.arange(len(x_train))
+    np.random.shuffle(indices)
+    x_train_shuffled = x_train[indices]
+    y_train_shuffled = y_train[indices]
+    split_index = int(0.8 * len(x_train))
+
+    x_train_split = x_train_shuffled[:split_index]
+    y_train_split = y_train_shuffled[:split_index]
+    x_val_split = x_train_shuffled[split_index:]
+    y_val_split = y_train_shuffled[split_index:]
+
+    return x_train_split, y_train_split, x_val_split, y_val_split
+
 
 
 def get_mnist():

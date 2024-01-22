@@ -22,9 +22,19 @@ def main(args):
     elif (args.experiment == 'test_activation'):  # Rubric #8: Activation Experiments
         configFile = None  # Create a config file and change None to the config file name
 
+    # make result stable
+    np.random.seed(42)
 
-    # Load the data
+    # # Load the data
     x_train, y_train, x_valid, y_valid, x_test, y_test = util.load_data(path=datasetDir)
+    
+    # image = x_train[0]
+    # print(np.mean(image), np.std(image))
+    # # print(image[:30])
+    # # print(x_train.shape, y_train.shape)
+    # # print(x_valid.shape, y_valid.shape)
+    # # print(x_test.shape, y_test.shape)
+    # return 0
 
     # Load the configuration from the corresponding yaml file. Specify the file path and name
     config = util.load_config(configYamlPath + configFile)
