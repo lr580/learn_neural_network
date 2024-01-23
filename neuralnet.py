@@ -61,47 +61,26 @@ class Activation():
 
 
     def sigmoid(self, x):
-        """
-        TODO: Implement the sigmoid activation here.
-        """
-        raise NotImplementedError("Sigmoid not implemented")
+        return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
-        """
-        TODO: Implement tanh here.
-        """
-        raise NotImplementedError("Tanh not implemented")
+        return np.tanh(x)
 
     def ReLU(self, x):
-        """
-        TODO: Implement ReLU here.
-        """
-        raise NotImplementedError("ReLU not implemented")
+        return np.maximum(0, x)
 
     def output(self, x):
-        """
-        TODO: Implement softmax function here.
-        Remember to take care of the overflow condition (i.e. how to avoid denominator becoming zero).
-        """
-        raise NotImplementedError("output activation not implemented")
+        e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        return e_x / e_x.sum(axis=1, keepdims=True)
 
     def grad_sigmoid(self, x):
-        """
-        TODO: Compute the gradient for sigmoid here.
-        """
-        raise NotImplementedError("Sigmoid gradient not implemented")
+        return self.sigmoid(x) * (1 - self.sigmoid(x))
 
     def grad_tanh(self, x):
-        """
-        TODO: Compute the gradient for tanh here.
-        """
-        raise NotImplementedError("Tanh gradient not implemented")
+        return 1 - np.tanh(x) ** 2
 
     def grad_ReLU(self, x):
-        """
-        TODO: Compute the gradient for ReLU here.
-        """
-        raise NotImplementedError("ReLU gradient not implemented")
+        return np.where(x > 0, 1, 0)
 
     def grad_output(self, x):
         """
@@ -125,11 +104,11 @@ class Layer():
         self.w = 0.01 * np.random.random((in_units + 1, out_units))
 
         self.x = None    # Save the input to forward in this
-        self.a = None    #output without activation
+        self.a = None    # output without activation
         self.z = None    # Output After Activation
-        self.activation=activation
+        self.activation = activation
 
-
+        self.prev_dw = np.zeros_like(self.w) 
         self.dw = 0  # Save the gradient w.r.t w in this. w already includes bias term
 
     def __call__(self, x):
@@ -140,13 +119,16 @@ class Layer():
 
     def forward(self, x):
         """
-        TODO: Compute the forward pass (activation of the weighted input) through the layer here and return it.
+        Compute the forward pass (activation of the weighted input) through the layer here and return it.
         """
-        raise NotImplementedError("Forward propagation not implemented for Layer")
+        self.x = np.hstack([x, np.ones((x.shape[0], 1))])
+        self.a = np.dot(self.x, self.w)
+        self.z = self.activation(self.a)
+        return self.z
 
     def backward(self, deltaCur, learning_rate, momentum_gamma, regularization, gradReqd=True):
         """
-        TODO: Write the code for backward pass. This takes in gradient from its next layer as input and
+        Write the code for backward pass. This takes in gradient from its next layer as input and
         computes gradient for its weights and the delta to pass to its previous layers. gradReqd is used to specify whether to update the weights i.e. whether self.w should
         be updated after calculating self.dw
         The delta expression for any layer consists of delta and weights from the next layer and derivative of the activation function
@@ -156,8 +138,21 @@ class Layer():
 
         When implementing softmax regression part, just focus on implementing the single-layer case first.
         """
-        raise NotImplementedError("Backward propagation not implemented for Layer")
+        grad_activation = self.activation.backward(self.a)
+        delta_next = deltaCur
+        delta_cur = np.dot(delta_next, self.w.T) * grad_activation
+        self.dw = np.dot(self.x.T, delta_next)
+        
+        if regularization:
+            self.dw += regularization * self.w
+            
+        if momentum_gamma:
+            self.dw = momentum_gamma * self.prev_dw + (1 - momentum_gamma) * self.dw
+            self.prev_dw = self.dw
 
+        if gradReqd:
+            self.w -= learning_rate * self.dw
+        return delta_cur[:, :-1]
 
 class Neuralnetwork():
     """
@@ -180,6 +175,14 @@ class Neuralnetwork():
                 self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i+1], Activation(config['activation'])))
             elif i  == self.num_layers - 1:
                 self.layers.append(Layer(config['layer_specs'][i], config['layer_specs'][i + 1], Activation("output")))
+                
+        # read other configs
+        self.learning_rate = config['learning_rate']
+        self.momentum = config['momentum']
+        self.momentum_gamma = config['momentum_gamma']
+        if not self.momentum:
+            self.momentum_gamma = None
+        self.regularization = config['L2_penalty']
 
     def __call__(self, x, targets=None):
         """
@@ -189,24 +192,55 @@ class Neuralnetwork():
 
     def forward(self, x, targets=None):
         """
-        TODO: Compute forward pass through all the layers in the network and return the loss.
+        Compute forward pass through all the layers in the network and return the loss.
         If targets are provided, return loss and accuracy/number of correct predictions as well.
         """
-        raise NotImplementedError("Forward propagation not implemented for NeuralNetwork")
+        self.x = x
+        self.targets = targets
+        for layer in self.layers:
+            x = layer(x)
+        self.y = x
+        
+        if targets is not None:
+            return self.loss(self.y, targets), self.accuracy(self.y, targets)
+        return self.y
 
+
+    def accuracy(self, logits, targets):
+        '''
+        added helper functions
+        '''
+        predictions = np.argmax(logits, axis=1)
+        targets = np.argmax(targets, axis=1)
+        return np.mean(predictions == targets)
 
     def loss(self, logits, targets):
         '''
-        TODO: Compute the categorical cross-entropy loss and return it.
+        Compute the categorical cross-entropy loss and return it.
         '''
-        raise NotImplementedError("Loss not implemented for NeuralNetwork")
+        m = targets.shape[0]
+        probs = logits
+        
+        # t_k one-hot, only 1 value counts
+        targets = np.argmax(targets, axis=1)
+        correct_log_probs = -np.log(probs[range(m), targets] + 1e-9) # avoid zero division
+        loss = np.sum(correct_log_probs)
+        return loss
 
     def backward(self, gradReqd=True):
         '''
-        TODO: Implement backpropagation here by calling backward method of Layers class.
+        Implement backpropagation here by calling backward method of Layers class.
         Call backward methods of individual layers.
         '''
-        raise NotImplementedError("Backward propagation not implemented for NeuralNetwork")
+        # from PA1 Page3 2a, the gradient is t - y
+        delta = self.y - self.targets
+        for layer in reversed(self.layers):
+            delta = layer.backward(
+                delta, 
+                self.learning_rate,
+                self.momentum_gamma,
+                self.regularization,
+                gradReqd=gradReqd)
 
 
 

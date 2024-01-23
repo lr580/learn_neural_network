@@ -27,15 +27,8 @@ def main(args):
 
     # # Load the data
     x_train, y_train, x_valid, y_valid, x_test, y_test = util.load_data(path=datasetDir)
+    print('Loading and pre-processing done.')
     
-    # image = x_train[0]
-    # print(np.mean(image), np.std(image))
-    # # print(image[:30])
-    # # print(x_train.shape, y_train.shape)
-    # # print(x_valid.shape, y_valid.shape)
-    # # print(x_test.shape, y_test.shape)
-    # return 0
-
     # Load the configuration from the corresponding yaml file. Specify the file path and name
     config = util.load_config(configYamlPath + configFile)
 

@@ -51,9 +51,7 @@ def one_hot_encoding(labels, num_classes=10):
     returns:
         oneHot : N X num_classes 2D array
     """
-    oneHot = np.zeros((labels.size, num_classes))
-    oneHot[np.arange(labels.size), labels] = 1
-    return oneHot
+    return np.eye(num_classes)[labels.flatten()]
 
 
 def generate_minibatches(dataset, batch_size=64):
@@ -287,9 +285,12 @@ def load_data(path):
     # Reformat the images and labels
     train_images, test_images = train_images.reshape(train_images.shape[0], -1), test_images.reshape(test_images.shape[0], -1)
     train_labels, test_labels = np.expand_dims(train_labels, axis=1), np.expand_dims(test_labels, axis=1)
+    print('Reformatting done.')
+    print(f'Shape:  train {train_images.shape}, test {test_images.shape}')
 
     # Create 80-20 train-validation split
     train_images, train_labels, val_images, val_labels = createTrainValSplit(train_images, train_labels)
+    print('Splitting train and validation done.')
 
     # Preprocess data
     train_normalized_images = normalize_data(train_images)
