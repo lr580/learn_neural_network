@@ -20,7 +20,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         the trained model
     """
 
-    # Read in the esssential configs
+    # Read configs
     epochs = config['epochs']
     batch_size = config['batch_size']
     early_stopping_rounds = config['early_stop_epoch']
@@ -30,13 +30,18 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
     
     n_samples = x_train.shape[0]
     best_model = None
-    best_validation_acc = float('-inf')
+    best_validation_error = float('inf')
     early_stopping_counter = 0
+    
+    train_losses, train_accs = [], []
+    val_losses, val_accs = [], []
     
     for epoch in range(epochs):
         permutation = np.random.permutation(n_samples)
         x_train_shuffled = x_train[permutation]
         y_train_shuffled = y_train[permutation]
+
+        train_loss, train_acc = [], []
 
         # also can use util.py's generate_minibatches
         for i in range(0, n_samples, batch_size):
@@ -44,23 +49,52 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             x_batch = x_train_shuffled[i:end]
             y_batch = y_train_shuffled[i:end]
             
-            model(x_batch, y_batch) # Forward
+            loss, acc = model(x_batch, y_batch) # Forward
+            train_loss.append(loss)
+            train_acc.append(acc)
             model.backward()
+            
+        train_acc = np.mean(train_acc)
+        train_loss = np.mean(train_loss)
 
         # Early stopping check
-        validation_acc, _ = modelTest(model, x_valid, y_valid)
+        validation_acc, validation_error = modelTest(model, x_valid, y_valid)
         
-        print(epoch, _, validation_acc)
-        if validation_acc > best_validation_acc:
-            best_validation_acc = validation_acc
+        print(f'{epoch}, {validation_error:.2f}, {validation_acc:.2f}, {train_loss:.2f}, {train_acc:.2f}')
+        train_losses.append(train_loss)
+        train_accs.append(train_acc)
+        val_losses.append(validation_error)
+        val_accs.append(validation_acc)
+        
+        if validation_error < best_validation_error:
+            best_validation_error = validation_error
             best_model = copy.deepcopy(model)
             early_stopping_counter = 0
         else:
             early_stopping_counter += 1
             if early_stopping_counter >= early_stopping_rounds:
-                # print(f"Stopping early at epoch {epoch}")
                 break
+    
+    import matplotlib.pyplot as plt
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    x = range(len(train_losses))
+    
+    ax1.plot(x, train_losses, label='train loss')
+    ax1.plot(x, val_losses, label='validation loss')
+    ax1.set_title('Train / Validation Loss')
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.legend()
 
+    ax2.plot(x, train_accs, label='train accuracy')
+    ax2.plot(x, val_accs, label='validation accuracy')
+    ax2.set_title('Train / Validation Accuracy')
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('y')
+    ax2.legend()
+
+    plt.show()
+    
     return best_model
 
 #This is the test method

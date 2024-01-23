@@ -108,7 +108,7 @@ class Layer():
         self.z = None    # Output After Activation
         self.activation = activation
 
-        self.prev_dw = np.zeros_like(self.w) 
+        self.prev_dw = np.zeros_like(self.w) #
         self.dw = 0  # Save the gradient w.r.t w in this. w already includes bias term
 
     def __call__(self, x):
@@ -140,8 +140,8 @@ class Layer():
         """
         grad_activation = self.activation.backward(self.a)
         delta_next = deltaCur
-        delta_cur = np.dot(delta_next, self.w.T) * grad_activation
         self.dw = np.dot(self.x.T, delta_next)
+        delta_cur = np.dot(delta_next, self.w.T) * grad_activation
         
         if regularization:
             self.dw += regularization * self.w
@@ -219,12 +219,11 @@ class Neuralnetwork():
         Compute the categorical cross-entropy loss and return it.
         '''
         m = targets.shape[0]
-        probs = logits
         
         # t_k one-hot, only 1 value counts
         targets = np.argmax(targets, axis=1)
-        correct_log_probs = -np.log(probs[range(m), targets] + 1e-9) # avoid zero division
-        loss = np.sum(correct_log_probs)
+        correct_log_probs = -np.log(logits[range(m), targets] + 1e-9) # avoid zero division
+        loss = np.sum(correct_log_probs) / m
         return loss
 
     def backward(self, gradReqd=True):
