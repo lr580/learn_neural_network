@@ -68,10 +68,13 @@ class Activation():
         return np.tanh(x)
 
     def ReLU(self, x):
-        return np.maximum(0, x)
+        return np.minimum(100,np.maximum(0, x))
 
     def output(self, x):
         e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+        # x = x - np.max(x, axis=1, keepdims=True)
+        # x = np.clip(x, -10, 10)
+        # e_x = np.exp(x)
         return e_x / e_x.sum(axis=1, keepdims=True)
 
     def grad_sigmoid(self, x):

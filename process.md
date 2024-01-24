@@ -172,6 +172,7 @@ output / softmax: $\dfrac{e^{x_i}}{\sum_j e^{x_j}}$
 ```python
 class Activation():
     def sigmoid(self, x):
+        x = np.clip(x, -500, 500) # avoid overflow
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -683,7 +684,7 @@ def check_grad(model, x_train, y_train):
 > self.dw =  m_hat / (np.sqrt(v_hat) + self.epsilon)
 > ```
 
-> 最终经过努力，做了一个 93.59% 的模型
+> 最终经过努力，做了一个 93.59% 的模型 (没尝试：改激活 sigmoid，可能好一点)
 >
 > ```yaml
 > layer_specs: [784, 256, 128, 10]
@@ -822,11 +823,22 @@ validation_error /= x_valid.shape[0]
 validation_error += model.penlaty_loss(x_valid.shape[0])
 ```
 
+删掉上一问的学习率动态，或者设置为只有上一问(main函数参数设置)才动态学习率。
+
+或者对验证集直接改 modeltest，这样对测试集也一样输出：
+
+```python
+loss, acc = model(X_test, y_test)
+loss /= X_test.shape[0]
+loss += model.penlaty_loss(X_test.shape[0])
+return acc, loss
+```
+
 
 
 做实验，增加 `config_7.yaml`，内容与 `config_5.yaml` 保持一致，后面做实验时修改 `L2_penalty` 为 0.01 或 0.0001。它具体是 L2 还是 L1 视修改上文 `REGTYPE` 定。`main.py` 对应 elif 修改为对应路径。
 
-**切记学习率改成 0.01**，~~不然会像我一样在学习率沿用第三问的 1 让损失越来越大，然后一直没找到原因乱改了两个多小时改了无数地方。~~
+切记学习率改成 0.01，~~不然会像我一样在学习率沿用第三问的 1 让损失越来越大，然后一直没找到原因乱改了两个多小时改了无数地方。~~
 
 实验时，修改 yaml 文件的正则化权重和上面的常量 `REGTYPE`，跑几次即可。
 
@@ -836,3 +848,29 @@ validation_error += model.penlaty_loss(x_valid.shape[0])
 
 ## 6. Activation Experiments  
 
+修复 sigmoid 精度溢出问题，修改为：
+
+```python
+def sigmoid(self, x):
+    x = np.clip(x, -500, 500) # avoid overflow
+    return 1 / (1 + np.exp(-x))
+```
+
+ReLU 防止梯度爆炸直接 x 变 nan：
+
+```python
+def ReLU(self, x):
+    return np.minimum(100,np.maximum(0, x))
+```
+
+增加 `config_8.yaml`，关闭正则化，修改不同的激活函数即可。修改 main。
+
+结论是：
+
+- sigmoid 和 tanh 差不多，也许更好一些
+
+- relu 不适合，不加修正直接梯度爆炸，或者上 He 正态初始化
+
+  当前权重初始化可能不足以打破对称性，并且可能导致梯度在反向传播过程中累积和放大，所以使用梯度裁剪技巧
+
+  裁剪后也不如上面两个

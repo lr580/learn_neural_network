@@ -61,8 +61,6 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
 
         # Early stopping check
         validation_acc, validation_error = modelTest(model, x_valid, y_valid)
-        validation_error /= x_valid.shape[0]
-        validation_error += model.penlaty_loss(x_valid.shape[0])
         
         # model.learning_rate *= 0.96
         
@@ -118,4 +116,6 @@ def modelTest(model, X_test, y_test):
         test loss
     """
     loss, acc = model(X_test, y_test)
+    loss /= X_test.shape[0]
+    loss += model.penlaty_loss(X_test.shape[0])
     return acc, loss
