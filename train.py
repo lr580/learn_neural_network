@@ -41,7 +41,7 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         x_train_shuffled = x_train[permutation]
         y_train_shuffled = y_train[permutation]
 
-        train_loss, train_acc = [], []
+        train_loss, train_acc, train_penalty = [], [], []
 
         # also can use util.py's generate_minibatches
         for i in range(0, n_samples, batch_size):
@@ -50,18 +50,21 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             y_batch = y_train_shuffled[i:end]
             
             loss, acc = model(x_batch, y_batch) # Forward
+            train_penalty.append(model.penlaty_loss(n_samples))
             train_loss.append(loss)
             train_acc.append(acc)
             model.backward()
             
         train_acc = np.mean(train_acc)
         train_loss = np.mean(train_loss) / batch_size
+        train_loss += np.mean(train_penalty)
 
         # Early stopping check
         validation_acc, validation_error = modelTest(model, x_valid, y_valid)
-        validation_error /=  x_valid.shape[0]
+        validation_error /= x_valid.shape[0]
+        validation_error += model.penlaty_loss(x_valid.shape[0])
         
-        model.learning_rate *= 0.96
+        # model.learning_rate *= 0.96
         
         print(f'{epoch}, {validation_error:.4f}, {validation_acc:.4f}, {train_loss:.4f}, {train_acc:.4f}')
         train_losses.append(train_loss)

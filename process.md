@@ -755,3 +755,84 @@ def check_grad(model, x_train, y_train):
 
 
 
+## 5. Regularization Experiments
+
+L2 正则化：损失函数增加 $\dfrac12\lambda \sum w^2$，其导数为 $\lambda\sum w$
+
+L1 正则化：损失函数增加 $\lambda\sum|w|$，其导数为 $\lambda\sum \mathrm{sgn}(w)$
+
+因为要适应两种正则化，修改代码：
+
+在 `neuralnet.py` 或其他地方增加常数或可选参数：
+
+```python
+REGTYPE = 'L1' # Regularization type L1 or L2 (str)
+```
+
+对 layer 的反向传播，修改：
+
+```python
+if regularization:
+    if REGTYPE == 'L2':
+        self.dw += regularization * self.w
+    elif REGTYPE == 'L1':
+        self.dw += regularization * np.sign(self.w)
+```
+
+添加 neural network 类的辅助函数：
+
+```python
+def penlaty_loss(self, n_samples):
+    '''
+    added helper functions: n_samples = total samples rather than batch  size
+    '''
+    loss_penalty = 0
+    if self.regularization:
+        if REGTYPE == 'L2':
+            for layer in self.layers:
+                loss_penalty += 0.5 * np.sum(layer.w ** 2)
+        elif REGTYPE == 'L1':
+            for layer in self.layers:
+                loss_penalty += np.sum(np.abs(layer.w))
+    loss_penalty *= self.regularization / n_samples
+    return loss_penalty
+```
+
+- 对 mini batch SGD，每一 epoch 多个 batch，更新多次和求多次正则项，数目是 B，验证集是 n_samples，去掉这个除数，会导致：可能导致在大数据集上训练时正则化作用过强，而在小数据集上训练时正则化作用不足
+
+loss 函数加回除以 m：
+
+```python
+loss = np.sum(correct_log_probs) / m
+```
+
+因为 model 没接收训练集大小，所以对 `train.py` 修改：
+
+```python
+train_loss, train_acc, train_penalty = [], [], []
+for i in range(0, n_samples, batch_size):
+    ...
+    loss, acc = model(x_batch, y_batch) # Forward
+    train_penalty.append(model.penlaty_loss(n_samples))
+...
+train_loss = np.mean(train_loss) / batch_size
+train_loss += np.mean(train_penalty)
+...
+validation_error /= x_valid.shape[0]
+validation_error += model.penlaty_loss(x_valid.shape[0])
+```
+
+
+
+做实验，增加 `config_7.yaml`，内容与 `config_5.yaml` 保持一致，后面做实验时修改 `L2_penalty` 为 0.01 或 0.0001。它具体是 L2 还是 L1 视修改上文 `REGTYPE` 定。`main.py` 对应 elif 修改为对应路径。
+
+**切记学习率改成 0.01**，~~不然会像我一样在学习率沿用第三问的 1 让损失越来越大，然后一直没找到原因乱改了两个多小时改了无数地方。~~
+
+实验时，修改 yaml 文件的正则化权重和上面的常量 `REGTYPE`，跑几次即可。
+
+要实现 10% more，可以先 early stop 跑出一个轮次，记录轮数，然后不 early stop 跑固定 110% 记录轮数。
+
+
+
+## 6. Activation Experiments  
+

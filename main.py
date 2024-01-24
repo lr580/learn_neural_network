@@ -18,7 +18,7 @@ def main(args):
     elif (args.experiment == 'test_momentum'):  # Rubric #6: Momentum Experiments
         configFile = "config_6.yaml"
     elif (args.experiment == 'test_regularization'):  # Rubric #7: Regularization Experiments
-        configFile = None  # Create a config file and change None to the config file name
+        configFile = "config_7.yaml"  # Create a config file and change None to the config file name
     elif (args.experiment == 'test_activation'):  # Rubric #8: Activation Experiments
         configFile = None  # Create a config file and change None to the config file name
 

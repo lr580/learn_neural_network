@@ -89,6 +89,7 @@ class Activation():
         """
         return 1  #Deliberately returning 1 for output layer case
 
+REGTYPE = 'L2' # Regularization type L1 or L2 (str)
 
 class Layer():
     """
@@ -153,7 +154,10 @@ class Layer():
         delta_cur = np.dot(np.multiply(grad_activation, delta_next), self.w.T)
         
         if regularization:
-            self.dw += regularization * self.w
+            if REGTYPE == 'L2':
+                self.dw += regularization * self.w
+            elif REGTYPE == 'L1':
+                self.dw += regularization * np.sign(self.w)
             
         if momentum_gamma:
             # raw momentum
@@ -238,6 +242,21 @@ class Neuralnetwork():
         targets = np.argmax(targets, axis=1)
         return np.mean(predictions == targets)
 
+    def penlaty_loss(self, n_samples):
+        '''
+        added helper functions: n_samples = total samples rather than batch  size
+        '''
+        loss_penalty = 0
+        if self.regularization:
+            if REGTYPE == 'L2':
+                for layer in self.layers:
+                    loss_penalty += 0.5 * np.sum(layer.w ** 2)
+            elif REGTYPE == 'L1':
+                for layer in self.layers:
+                    loss_penalty += np.sum(np.abs(layer.w))
+        loss_penalty *= self.regularization / n_samples
+        return loss_penalty
+
     def loss(self, logits, targets):
         '''
         Compute the categorical cross-entropy loss and return it.
@@ -247,7 +266,7 @@ class Neuralnetwork():
         # t_k one-hot, only 1 value counts
         targets = np.argmax(targets, axis=1)
         correct_log_probs = -np.log(logits[range(m), targets] + 1e-9) # avoid zero division
-        loss = np.sum(correct_log_probs) 
+        loss = np.sum(correct_log_probs)
         return loss
 
     def backward(self, gradReqd=True):
