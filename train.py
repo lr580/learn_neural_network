@@ -61,6 +61,8 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
         validation_acc, validation_error = modelTest(model, x_valid, y_valid)
         validation_error /=  x_valid.shape[0]
         
+        model.learning_rate *= 0.96
+        
         print(f'{epoch}, {validation_error:.4f}, {validation_acc:.4f}, {train_loss:.4f}, {train_acc:.4f}')
         train_losses.append(train_loss)
         train_accs.append(train_acc)

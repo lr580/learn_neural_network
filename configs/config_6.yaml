@@ -3,13 +3,13 @@
 # This specifies the number of layers and number of hidden neurons in each layer.
 # Note that the first and the last elements of the list indicate the input and
 # output sizes
-layer_specs: [784, 128, 10]
+layer_specs: [784, 128, 128, 10]
 
 # Type of non-linear activation function to be used for the layers.
 activation: "tanh"
 
 # The learning rate to be used for training.
-learning_rate: 0.01
+learning_rate: 0.02
 
 # Number of training samples per batch to be passed to network
 batch_size: 128
@@ -21,10 +21,10 @@ epochs: 100
 early_stop: True
 
 # History for early stopping. Wait for this many epochs to check validation loss / accuracy.
-early_stop_epoch: 3
+early_stop_epoch: 10
 
 # Regularization constant
-L2_penalty: 0
+L2_penalty: 0.01
 
 # Use momentum for training
 momentum: True

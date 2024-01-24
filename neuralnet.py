@@ -61,6 +61,7 @@ class Activation():
 
 
     def sigmoid(self, x):
+        x = np.clip(x, -500, 500) # avoid overflow
         return 1 / (1 + np.exp(-x))
 
     def tanh(self, x):
@@ -108,8 +109,15 @@ class Layer():
         self.z = None    # Output After Activation
         self.activation = activation
 
-        self.prev_dw = np.zeros_like(self.w) #
+        
         self.dw = 0  # Save the gradient w.r.t w in this. w already includes bias term
+        self.prev_dw = np.zeros_like(self.w) # momentum
+        
+        # Adam parameters
+        self.m = np.zeros_like(self.w) 
+        self.v = np.zeros_like(self.w)  
+        self.t = 0 
+        self.epsilon = 1e-8 
 
     def __call__(self, x):
         """
@@ -148,11 +156,26 @@ class Layer():
             self.dw += regularization * self.w
             
         if momentum_gamma:
-            self.dw = momentum_gamma * self.prev_dw + (1 - momentum_gamma) * self.dw
-            self.prev_dw = self.dw
+            # raw momentum
+            # self.dw = momentum_gamma * self.prev_dw + (1 - momentum_gamma) * self.dw
+            # self.prev_dw = self.dw
+            
+            # RMSProp
+            # self.prev_dw = momentum_gamma * self.prev_dw + (1 - momentum_gamma) * np.square(self.dw)
+            # self.dw /= (np.sqrt(self.prev_dw) + 1e-8)
+            
+            # Adam
+            self.t += 1
+            beta1 = beta2 = momentum_gamma
+            self.m = beta1 * self.m + (1 - beta1) * self.dw 
+            self.v = beta2 * self.v + (1 - beta2) * np.square(self.dw) 
+            m_hat = self.m / (1 - beta1 ** self.t)
+            v_hat = self.v / (1 - beta2 ** self.t)
+            self.dw =  m_hat / (np.sqrt(v_hat) + self.epsilon)
 
         if gradReqd:
             self.w -= learning_rate * self.dw
+            # if 
         return delta_cur[:, :-1]
 
 class Neuralnetwork():
