@@ -55,12 +55,13 @@ def train(model, x_train, y_train, x_valid, y_valid, config):
             model.backward()
             
         train_acc = np.mean(train_acc)
-        train_loss = np.mean(train_loss)
+        train_loss = np.mean(train_loss) / batch_size
 
         # Early stopping check
         validation_acc, validation_error = modelTest(model, x_valid, y_valid)
+        validation_error /=  x_valid.shape[0]
         
-        print(f'{epoch}, {validation_error:.2f}, {validation_acc:.2f}, {train_loss:.2f}, {train_acc:.2f}')
+        print(f'{epoch}, {validation_error:.4f}, {validation_acc:.4f}, {train_loss:.4f}, {train_acc:.4f}')
         train_losses.append(train_loss)
         train_accs.append(train_acc)
         val_losses.append(validation_error)

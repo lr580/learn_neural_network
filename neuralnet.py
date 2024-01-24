@@ -141,7 +141,8 @@ class Layer():
         grad_activation = self.activation.backward(self.a)
         delta_next = deltaCur
         self.dw = np.dot(self.x.T, delta_next)
-        delta_cur = np.dot(delta_next, self.w.T) * grad_activation
+        # self.dw = np.dot(delta_next.T, self.x).T
+        delta_cur = np.dot(np.multiply(grad_activation, delta_next), self.w.T)
         
         if regularization:
             self.dw += regularization * self.w
@@ -223,7 +224,7 @@ class Neuralnetwork():
         # t_k one-hot, only 1 value counts
         targets = np.argmax(targets, axis=1)
         correct_log_probs = -np.log(logits[range(m), targets] + 1e-9) # avoid zero division
-        loss = np.sum(correct_log_probs) / m
+        loss = np.sum(correct_log_probs) 
         return loss
 
     def backward(self, gradReqd=True):

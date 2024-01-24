@@ -287,6 +287,7 @@ def load_data(path):
     train_labels, test_labels = np.expand_dims(train_labels, axis=1), np.expand_dims(test_labels, axis=1)
     print('Reformatting done.')
     print(f'Shape:  train {train_images.shape}, test {test_images.shape}')
+    print(f'Shape:  train {train_labels.shape}, test {test_labels.shape}')
 
     # Create 80-20 train-validation split
     train_images, train_labels, val_images, val_labels = createTrainValSplit(train_images, train_labels)

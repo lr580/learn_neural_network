@@ -233,7 +233,7 @@ def forward(self, x):
 >
 >   这个结果最开始为输出层的，并不断将结果返回给上一层；如最开始为 `(N, 10)`，
 >
->   使用交叉熵损失函数为 $E(t,y)$，其中 $t$ 是预测输出，$y$ 是真实输出，其中 $t=softmax(z)$，其中 $a_{next}$ 就是 softmax，$z$ 是上一层 forward 的返回值，根据 PA1 Page3 2a 可知，最初始 $\dfrac{\partial E}{\partial a_{next}}=t-y$
+>   使用交叉熵损失函数为 $E(t,y)$，其中 $t$ 是预测输出，$y$ 是真实输出，其中 $t=softmax(a)$，其中 $a_{next}$ 就是 softmax，$a$ 是上一层 forward 的返回值，根据 PA1 Page3 2a 可知，最初始 $\dfrac{\partial E}{\partial a_{next}}=t-y$
 >
 > - 设权重更新量为 `w -= learning_rate * dw`，这个 dw 是损失函数对当前矩阵 w 的偏导，即 $\dfrac{\partial E}{\partial w}$
 >
@@ -252,7 +252,7 @@ def backward(self, deltaCur, learning_rate, momentum_gamma, regularization, grad
     grad_activation = self.activation.backward(self.a)
     delta_next = deltaCur
     self.dw = np.dot(self.x.T, delta_next)
-    delta_cur = np.dot(delta_next, self.w.T) * grad_activation
+    delta_cur = np.dot(np.multiply(grad_activation, delta_next), self.w.T)
     if gradReqd:
         self.w -= learning_rate * self.dw
     return delta_cur[:, :-1]
@@ -284,7 +284,7 @@ def forward(self, x, targets=None):
     self.targets = targets
     for layer in self.layers:
         x = layer(x)
-        self.y = x
+    self.y = x
 
    if targets is not None:
         return self.loss(self.y, targets), self.accuracy(self.y, targets)
@@ -314,7 +314,7 @@ def loss(self, logits, targets):
     # t_k one-hot, only 1 value counts
     targets = np.argmax(targets, axis=1)
     correct_log_probs = -np.log(logits[range(m), targets] + 1e-9) # avoid zero division
-    loss = np.sum(correct_log_probs) / m
+    loss = np.sum(correct_log_probs)
     return loss
 ```
 
@@ -434,78 +434,78 @@ python main.py --experiment test_softmax
 
 ```python
 epochs = config['epochs']
-    batch_size = config['batch_size']
-    early_stopping_rounds = config['early_stop_epoch']
-    early_stop = config['early_stop']
-    if not early_stop:
-        early_stopping_rounds = float('inf')
-    
-    n_samples = x_train.shape[0]
-    best_model = None
-    best_validation_error = float('inf')
-    early_stopping_counter = 0
-    
-    train_losses, train_accs = [], []
-    val_losses, val_accs = [], []
-    
-    for epoch in range(epochs):
-        permutation = np.random.permutation(n_samples)
-        x_train_shuffled = x_train[permutation]
-        y_train_shuffled = y_train[permutation]
+batch_size = config['batch_size']
+early_stopping_rounds = config['early_stop_epoch']
+early_stop = config['early_stop']
+if not early_stop:
+early_stopping_rounds = float('inf')
 
-        train_loss, train_acc = [], []
+n_samples = x_train.shape[0]
+best_model = None
+best_validation_error = float('inf')
+early_stopping_counter = 0
 
-        # also can use util.py's generate_minibatches
-        for i in range(0, n_samples, batch_size):
-            end = i + batch_size
-            x_batch = x_train_shuffled[i:end]
-            y_batch = y_train_shuffled[i:end]
-            
-            loss, acc = model(x_batch, y_batch) # Forward
-            train_loss.append(loss)
-            train_acc.append(acc)
-            model.backward()
-            
-        train_acc = np.mean(train_acc)
-        train_loss = np.mean(train_loss)
+train_losses, train_accs = [], []
+val_losses, val_accs = [], []
 
-        # Early stopping check
-        validation_acc, validation_error = modelTest(model, x_valid, y_valid)
-        
-        print(f'{epoch}, {validation_error:.2f}, {validation_acc:.2f}, {train_loss:.2f}, {train_acc:.2f}')
-        train_losses.append(train_loss)
-        train_accs.append(train_acc)
-        val_losses.append(validation_error)
-        val_accs.append(validation_acc)
-        
-        if validation_error < best_validation_error:
-            best_validation_error = validation_error
-            best_model = copy.deepcopy(model)
-            early_stopping_counter = 0
-        else:
-            early_stopping_counter += 1
-            if early_stopping_counter >= early_stopping_rounds:
-                break
-    
-    import matplotlib.pyplot as plt
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    x = range(len(train_losses))
-    
-    ax1.plot(x, train_losses, label='train loss')
-    ax1.plot(x, val_losses, label='validation loss')
-    ax1.set_title('Train / Validation Loss')
-    ax1.set_xlabel('x')
-    ax1.set_ylabel('y')
-    ax1.legend()
+for epoch in range(epochs):
+permutation = np.random.permutation(n_samples)
+x_train_shuffled = x_train[permutation]
+y_train_shuffled = y_train[permutation]
 
-    ax2.plot(x, train_accs, label='train accuracy')
-    ax2.plot(x, val_accs, label='validation accuracy')
-    ax2.set_title('Train / Validation Accuracy')
-    ax2.set_xlabel('x')
-    ax2.set_ylabel('y')
-    ax2.legend()
+train_loss, train_acc = [], []
 
-    plt.show()
+# also can use util.py's generate_minibatches
+for i in range(0, n_samples, batch_size):
+end = i + batch_size
+x_batch = x_train_shuffled[i:end]
+y_batch = y_train_shuffled[i:end]
+
+loss, acc = model(x_batch, y_batch) # Forward
+train_loss.append(loss)
+train_acc.append(acc)
+model.backward()
+
+train_acc = np.mean(train_acc)
+train_loss = np.mean(train_loss)
+
+# Early stopping check
+validation_acc, validation_error = modelTest(model, x_valid, y_valid)
+
+print(f'{epoch}, {validation_error:.2f}, {validation_acc:.2f}, {train_loss:.2f}, {train_acc:.2f}')
+train_losses.append(train_loss)
+train_accs.append(train_acc)
+val_losses.append(validation_error)
+val_accs.append(validation_acc)
+
+if validation_error < best_validation_error:
+best_validation_error = validation_error
+best_model = copy.deepcopy(model)
+early_stopping_counter = 0
+else:
+early_stopping_counter += 1
+if early_stopping_counter >= early_stopping_rounds:
+break
+
+import matplotlib.pyplot as plt
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+x = range(len(train_losses))
+
+ax1.plot(x, train_losses, label='train loss')
+ax1.plot(x, val_losses, label='validation loss')
+ax1.set_title('Train / Validation Loss')
+ax1.set_xlabel('x')
+ax1.set_ylabel('y')
+ax1.legend()
+
+ax2.plot(x, train_accs, label='train accuracy')
+ax2.plot(x, val_accs, label='validation accuracy')
+ax2.set_title('Train / Validation Accuracy')
+ax2.set_xlabel('x')
+ax2.set_ylabel('y')
+ax2.legend()
+
+plt.show()
 ```
 
 测试集准确率：直接看 main 输出。
@@ -522,3 +522,124 @@ epochs = config['epochs']
 Test Accuracy: 0.8983  Test Loss: 0.7202034237572436
 ```
 
+
+
+## 3. Backpropagation
+
+### 检验隐藏层正确性
+
+直接上 `config_5.yaml` 测试正确性。
+
+```sh
+python main.py --experiment test_gradients
+```
+
+先注释掉 `gradient.py` 的 raise 和 main 的 return 1，看看网络能不能跑。
+
+源代码里 `backward` 的：
+
+```python
+delta_cur = np.dot(delta_next, self.w.T) * grad_activation
+```
+
+发现两个层里，这三个变量的形状分别是：
+
+```
+(128, 10) (10, 129) 1
+(128, 128) (128, 785) (128, 128)
+```
+
+所以，修改为：
+
+```python
+delta_cur = np.dot(np.multiply(grad_activation, delta_next), self.w.T)
+```
+
+> 之后能正常跑代码，正确率大约 87.89%，可能是学习率过高。
+>
+> 学习率改成 0.01，提高到 91.19%
+>
+> 再跑上一问的代码，发现结果正确。
+
+测试结束，可以恢复 return 1。
+
+
+
+下面是一些 bugs 修复：
+
+注意到损失函数求导结果恰为 $t-y$ 的条件是不加均值即 $E=-\sum_n\sum_{k=1}^ct^n_k\ln y^n_k$，其中 t(target) 是真实值，y 是预测值，所以修改 loss 为：
+
+```python
+loss = np.sum(correct_log_probs) 
+```
+
+实际上，$10^{-9}$ 偏移项也会影响求导。虽然此时计算已经在 $O(\epsilon^2)$ 内了，尝试过将 $10^{-9}$ 修改为 $10^{-18}$，影响不大，可以不用继续优化了。
+
+为了让绘图 loss 一致，把均值外移，放到 train 里，修改这两行：
+
+```python
+train_loss = np.mean(train_loss) / batch_size
+validation_error /=  x_valid.shape[0]
+```
+
+丢回第一问去测试，发现结果不变。再次检验了正确性。
+
+### 数值微分
+
+> 题给公式是中心差分；比前向/反向差分更加精确。是数值微分的一种，不是自动微分。
+
+编写 `gradient.py` 的代码，按照公式来即可：
+
+```python
+def check_grad(model, x_train, y_train):
+    """
+        Checks if gradients computed numerically are within O(epsilon**2)
+
+        args:
+            model
+            x_train: Small subset of the original train dataset
+            y_train: Corresponding target labels of x_train
+
+        Prints gradient difference of values calculated via numerical approximation and backprop implementation
+    """
+    epsilon = 1e-2
+    model(x_train, y_train) # get backward basic
+    model.backward(False) # get dw
+    
+    def check(layer, i, j):
+        model.layers[layer].w[i, j] += epsilon
+        loss1, _ = model(x_train, y_train)
+        model.layers[layer].w[i, j] -= 2 * epsilon
+        loss2, _ = model(x_train, y_train)
+        model.layers[layer].w[i, j] += epsilon # resume
+        approximation = (loss1 - loss2) / (2 * epsilon)
+        gradient = model.layers[layer].dw[i, j]
+        delta = abs(approximation - gradient) # expected <= O(1e-4)
+        print(f'{layer} {i} {j} : {approximation:.10f} {gradient:.10f} {delta:.10f}')
+    
+    check(1, 128, 0) # output bias
+    check(0, 784, 0) # hidden bias
+    check(1, 0, 0) # hidden to output weight 1
+    check(1, 3, 1) # hidden to output weight 2
+    check(0, 500, 9) # input to hidden weight 1
+    check(0, 103, 1) # input to hidden weight 2
+```
+
+- 注意是每次只需要更新权值的具体某一个元素，而不是对整个矩阵的所有元素都加上这个增量；也因此，这种方法算量巨大，无法用于真正的梯度下降，只能用符号解或自动微分(后者本项目不涉及)
+
+
+
+输出结果为：
+
+```python
+1 128 0 : 1.0023628647 1.0023508568 0.0000120079
+0 784 0 : -0.0136611888 -0.0175663796 0.0039051908
+1 0 0 : -0.1653933018 -0.1653925813 0.0000007204
+1 3 1 : 1.1063918746 1.1063926002 0.0000007255
+0 500 9 : 0.0011692722 0.0016345474 0.0004652752
+0 103 1 : 0.0026152970 0.0035061785 0.0008908815
+```
+
+- 注意参数选取问题：
+
+  如果对 input to hidden，选取的 i 是诸如 i=0, i=3, 实际上就是图像里最左上角的像素，则会输出 0.0000，这是因为每张图片最左上角都是一个像素，没有任何可学习的，是无效特征。
