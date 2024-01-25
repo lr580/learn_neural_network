@@ -47,6 +47,8 @@ def main(args):
 
     #Print test accuracy and test loss
     print('Test Accuracy:', test_acc, ' Test Loss:', test_loss)
+    
+    
 
 
 if __name__ == "__main__":

@@ -758,9 +758,9 @@ def check_grad(model, x_train, y_train):
 
 ## 5. Regularization Experiments
 
-L2 正则化：损失函数增加 $\dfrac12\lambda \sum w^2$，其导数为 $\lambda\sum w$
+L2 正则化：损失函数增加 $\dfrac12\lambda \sum w^2$，其导数为 $\lambda w$
 
-L1 正则化：损失函数增加 $\lambda\sum|w|$，其导数为 $\lambda\sum \mathrm{sgn}(w)$
+L1 正则化：损失函数增加 $\lambda\sum|w|$，其导数为 $\lambda \mathrm{sgn}(w)$
 
 因为要适应两种正则化，修改代码：
 
@@ -804,7 +804,7 @@ def penlaty_loss(self, n_samples):
 loss 函数加回除以 m：
 
 ```python
-loss = np.sum(correct_log_probs) / m
+train_loss = np.mean(train_loss) / batch_size
 ```
 
 因为 model 没接收训练集大小，所以对 `train.py` 修改：
